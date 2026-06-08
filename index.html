@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Пинг-понг VS ИИ | Harya Team</title>
+    <title>игрок VS свин | Harya Team</title>
     <style>
         * {
             margin: 0;
@@ -133,13 +133,13 @@
 <div>
     <div class="game-container">
         <div class="score-board">
-            <div class="score">🧑‍💻 <span id="playerScore">0</span></div>
-            <div class="score">🤖 AI <span id="aiScore">0</span></div>
+            <div class="score">ты <span id="playerScore">0</span></div>
+            <div class="score">Свин аи <span id="aiScore">0</span></div>
             <button class="reset-btn" id="resetGameBtn">⟳</button>
         </div>
         <canvas id="pongCanvas" width="1000" height="600" style="width:100%; height:auto; max-width:1000px; aspect-ratio:1000/600"></canvas>
         <div class="controls-info">
-            🖱️ Мышь / 👆 Палец → двигай ракеткой вверх-вниз
+            мышью или пальцем = движение ракетки
         </div>
         <footer>by Harya Team</footer>
     </div>
@@ -196,7 +196,7 @@
         const PADDLE_HEIGHT = 100;
         let playerY = CH/2 - PADDLE_HEIGHT/2;
         let aiY = CH/2 - PADDLE_HEIGHT/2;
-        const AI_SPEED = 4.8;   // базовая скорость, увеличивается с отрывом счета
+        const AI_SPEED = 2.4;   // базовая скорость, увеличивается с отрывом счета
         
         // Мяч
         let ball = {
@@ -335,7 +335,7 @@
                     // ОЧКО У AI
                     aiScore++;
                     updateScoreUI();
-                    if(aiScore >= WIN_SCORE) endGame('🤖 AI ПОБЕДИЛ!');
+                    if(aiScore >= WIN_SCORE) endGame('свин победил');
                     else resetBall('ai');
                 }
             }
@@ -356,7 +356,7 @@
                 } else if(ball.x + ball.radius >= CW) {
                     playerScore++;
                     updateScoreUI();
-                    if(playerScore >= WIN_SCORE) endGame('✨ ТЫ ПОБЕДИЛ! ✨');
+                    if(playerScore >= WIN_SCORE) endGame('свин побежден');
                     else resetBall('player');
                 }
             }
