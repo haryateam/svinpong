@@ -135,7 +135,7 @@
         <div class="score-board">
             <div class="score">ты <span id="playerScore">0</span></div>
             <div class="score">Свин аи <span id="aiScore">0</span></div>
-            <button class="reset-btn" id="resetGameBtn">⟳</button>
+            <button class="reset-btn" id="resetGameBtn">ресет</button>
         </div>
         <canvas id="pongCanvas" width="1000" height="600" style="width:100%; height:auto; max-width:1000px; aspect-ratio:1000/600"></canvas>
         <div class="controls-info">
@@ -202,7 +202,7 @@
         let ball = {
             x: CW/2,
             y: CH/2,
-            vx: 4.2,
+            vx: 2.1,
             vy: 3.2,
             radius: 12
         };
@@ -283,7 +283,7 @@
                 ctx.fillText(winnerMsg, CW/2 - ctx.measureText(winnerMsg).width/2, CH/2 - 40);
                 ctx.font = '18px monospace';
                 ctx.fillStyle = '#ccccaa';
-                ctx.fillText('Кликните по полю или нажмите ⟳', CW/2 - 150, CH/2 + 30);
+                ctx.fillText('для ресета нажмите по полю или кнопку', CW/2 - 150, CH/2 + 30);
             }
         }
         
