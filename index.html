@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>игрок VS свин | Harya Team</title>
+    <title>Пинг-понг VS ИИ | Harya Team</title>
     <style>
         * {
             margin: 0;
@@ -19,11 +19,10 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: 'Segoe UI', 'Arial', system-ui, sans-serif;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             touch-action: manipulation;
         }
 
-        /* Контейнер с плиточным фоном */
         .game-container {
             background-image: url('assets/bg.png');
             background-repeat: repeat;
@@ -57,21 +56,29 @@
             border-radius: 60px;
             color: white;
             text-shadow: 0 2px 4px black;
-            font-weight: bold;
         }
 
         .score {
-            font-size: 2.2rem;
-            letter-spacing: 2px;
+            text-align: center;
             background: #1e2a3a;
             padding: 6px 20px;
             border-radius: 40px;
-            font-family: monospace;
+            min-width: 110px;
+        }
+
+        .score-label {
+            font-size: 1rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            color: #ddd;
         }
 
         .score span {
-            color: #ffd966;
             font-size: 2rem;
+            font-weight: 700;
+            color: #ffd966;
+            font-family: monospace;
         }
 
         .controls-info {
@@ -106,6 +113,7 @@
             cursor: pointer;
             font-size: 0.9rem;
             transition: transform 0.1s;
+            font-family: inherit;
         }
         .reset-btn:active {
             transform: scale(0.96);
@@ -117,11 +125,14 @@
                 padding: 8px 18px;
             }
             .score {
-                font-size: 1.4rem;
-                padding: 3px 14px;
+                padding: 4px 12px;
+                min-width: 80px;
             }
             .score span {
-                font-size: 1.3rem;
+                font-size: 1.5rem;
+            }
+            .score-label {
+                font-size: 0.75rem;
             }
             .controls-info {
                 font-size: 0.7rem;
@@ -133,13 +144,19 @@
 <div>
     <div class="game-container">
         <div class="score-board">
-            <div class="score">ты <span id="playerScore">0</span></div>
-            <div class="score">Свин аи <span id="aiScore">0</span></div>
+            <div class="score">
+                <div class="score-label">ты</div>
+                <span id="playerScore">0</span>
+            </div>
+            <div class="score">
+                <div class="score-label">свин</div>
+                <span id="aiScore">0</span>
+            </div>
             <button class="reset-btn" id="resetGameBtn">ресет</button>
         </div>
         <canvas id="pongCanvas" width="1000" height="600" style="width:100%; height:auto; max-width:1000px; aspect-ratio:1000/600"></canvas>
         <div class="controls-info">
-            мышью или пальцем = движение ракетки
+            мышь/палец для движения
         </div>
         <footer>by Harya Team</footer>
     </div>
@@ -147,73 +164,53 @@
 
 <script>
     (function(){
-        // ---------- НАСТРОЙКИ ----------
         const canvas = document.getElementById('pongCanvas');
         const ctx = canvas.getContext('2d');
         
-        // Размеры канваса (фикс для расчетов, но CSS адаптирует)
         let CW = 1000;
         let CH = 600;
         canvas.width = CW;
         canvas.height = CH;
 
-        // ------ Загрузка текстур ------
         const ballImg = new Image();
-        ballImg.src = 'assets/ball.png';   // ТВОЙ PNG для мяча
-        const bgTile = new Image();
-        bgTile.src = 'assets/bg.png';       // Плитка для заднего фона (будет поверх общего, но мы делаем бэк через контейнер, а здесь второй слой по желанию)
-        // (основной фон плиткой задан в .game-container, можно оставить canvas прозрачным или нарисовать дополнительно)
+        ballImg.src = 'assets/ball.png';
         
-        // музыка
         const bgMusic = new Audio('assets/music.mp3');
         bgMusic.loop = true;
         bgMusic.volume = 0.4;
-        // авто-воспроизведение после любого клика (чтобы не блокировал браузер)
+        bgMusic.playsInline = true;
         let musicStarted = false;
+        
         function startMusic() {
             if(!musicStarted && bgMusic.src && bgMusic.src !== '') {
-                bgMusic.play().catch(e=>console.log("авто-воспр. заблокировано, но пользователь кликнет"));
+                bgMusic.play().catch(e => console.log("audio play blocked", e));
                 musicStarted = true;
             }
         }
-        // клик по документу запустит музыку
-        document.body.addEventListener('click', () => {
-            if(!musicStarted && bgMusic.src && bgMusic.src !== '') {
-                bgMusic.play().catch(e=>console.log('ошибка аудио'));
-                musicStarted=true;
-            }
-        }, {once:false});
-
-        // ------ Игровые переменные ------
+        
         let playerScore = 0;
         let aiScore = 0;
         const WIN_SCORE = 5;
         let gameActive = true;
         let winnerMsg = '';
 
-        // Ракетки
         const PADDLE_WIDTH = 14;
         const PADDLE_HEIGHT = 100;
         let playerY = CH/2 - PADDLE_HEIGHT/2;
         let aiY = CH/2 - PADDLE_HEIGHT/2;
-        const AI_SPEED = 2.4;   // базовая скорость, увеличивается с отрывом счета
+        const AI_SPEED = 4.8;
         
-        // Мяч
         let ball = {
             x: CW/2,
             y: CH/2,
-            vx: 2.1,
+            vx: 4.2,
             vy: 3.2,
             radius: 12
         };
         
-        // Флаг для рестарта после победы
         let freezeFrame = false;
         let restartTimer = null;
 
-        // Управление мышью/тачем
-        let isDragging = false;
-        
         function getMouseY(clientY) {
             const rect = canvas.getBoundingClientRect();
             const scaleY = CH / rect.height;
@@ -237,15 +234,11 @@
         canvas.addEventListener('touchmove', handleMove, {passive:false});
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if(e.touches) handleMove(e); });
         
-        // ----- Отрисовка с текстурой мяча и плиткой по желанию -----
         function draw() {
             ctx.clearRect(0, 0, CW, CH);
-            
-            // Можно дополнительно залить канвас полупрозрачным слоем, чтобы фон контейнера просвечивал
             ctx.fillStyle = 'rgba(10, 15, 25, 0.45)';
             ctx.fillRect(0, 0, CW, CH);
             
-            // Разделительная линия
             ctx.beginPath();
             ctx.setLineDash([12, 16]);
             ctx.strokeStyle = 'rgba(255,240,180,0.7)';
@@ -255,14 +248,12 @@
             ctx.stroke();
             ctx.setLineDash([]);
             
-            // ракетки
             ctx.fillStyle = '#e6e9f0';
             ctx.shadowBlur = 6;
             ctx.fillRect(10, playerY, PADDLE_WIDTH, PADDLE_HEIGHT);
             ctx.fillRect(CW - 10 - PADDLE_WIDTH, aiY, PADDLE_WIDTH, PADDLE_HEIGHT);
             ctx.shadowBlur = 0;
             
-            // мяч (с картинкой, если загружена)
             if(ballImg.complete && ballImg.naturalWidth > 0) {
                 ctx.drawImage(ballImg, ball.x - ball.radius, ball.y - ball.radius, ball.radius*2, ball.radius*2);
             } else {
@@ -270,28 +261,22 @@
                 ctx.fillStyle = '#ffaa44';
                 ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2);
                 ctx.fill();
-                ctx.fillStyle = 'white';
-                ctx.arc(ball.x-2, ball.y-2, 3, 0, Math.PI*2);
-                ctx.fill();
             }
             
-            // счет победителя
             if(!gameActive && winnerMsg) {
-                ctx.font = 'bold 32px "Segoe UI"';
+                ctx.font = 'bold 32px system-ui, "Segoe UI", monospace';
                 ctx.fillStyle = '#ffdd99';
-                ctx.shadowBlur = 0;
                 ctx.fillText(winnerMsg, CW/2 - ctx.measureText(winnerMsg).width/2, CH/2 - 40);
-                ctx.font = '18px monospace';
+                ctx.font = '18px system-ui, sans-serif';
                 ctx.fillStyle = '#ccccaa';
-                ctx.fillText('для ресета нажмите по полю или кнопку', CW/2 - 150, CH/2 + 30);
+                ctx.fillText('нажми по полю для ресета (или кнопка)', CW/2 - 160, CH/2 + 30);
             }
         }
         
-        // ------ ИИ с прогрессией сложности (чем больше счет, тем быстрее) -----
         function updateAI() {
             let targetY = ball.y - PADDLE_HEIGHT/2;
             let diff = targetY - aiY;
-            let currentSpeed = AI_SPEED + (playerScore + aiScore) * 0.28;  // сложность растёт
+            let currentSpeed = AI_SPEED + (playerScore + aiScore) * 0.28;
             if(Math.abs(diff) > currentSpeed) {
                 aiY += Math.sign(diff) * currentSpeed;
             } else {
@@ -300,13 +285,11 @@
             aiY = Math.min(Math.max(aiY, 0), CH - PADDLE_HEIGHT);
         }
         
-        // ------ Обновление логики -----
         function updateBall() {
             if(!gameActive) return;
             ball.x += ball.vx;
             ball.y += ball.vy;
             
-            // стены верх/низ
             if(ball.y - ball.radius <= 0) {
                 ball.y = ball.radius;
                 ball.vy = -ball.vy;
@@ -316,31 +299,26 @@
                 ball.vy = -ball.vy;
             }
             
-            // левая ракетка (игрок)
             if(ball.vx < 0 && ball.x - ball.radius <= 10 + PADDLE_WIDTH) {
                 if(ball.y + ball.radius >= playerY && ball.y - ball.radius <= playerY + PADDLE_HEIGHT) {
                     let hitPos = (ball.y - playerY) / PADDLE_HEIGHT;
                     let angle = (hitPos - 0.5) * 1.1;
                     ball.vx = -ball.vx * 1.02;
                     ball.vy = ball.vy + angle * 5;
-                    // нормализация
                     let spd = Math.hypot(ball.vx, ball.vy);
-                    let maxSpd = 9.5;
-                    if(spd > maxSpd) {
-                        ball.vx = ball.vx / spd * maxSpd;
-                        ball.vy = ball.vy / spd * maxSpd;
+                    if(spd > 9.5) {
+                        ball.vx = ball.vx / spd * 9.5;
+                        ball.vy = ball.vy / spd * 9.5;
                     }
                     ball.x = 10 + PADDLE_WIDTH + ball.radius;
                 } else if(ball.x - ball.radius <= 0) {
-                    // ОЧКО У AI
                     aiScore++;
                     updateScoreUI();
-                    if(aiScore >= WIN_SCORE) endGame('свин победил');
+                    if(aiScore >= WIN_SCORE) endGame('вы лох');
                     else resetBall('ai');
                 }
             }
             
-            // правая ракетка AI
             if(ball.vx > 0 && ball.x + ball.radius >= CW - 10 - PADDLE_WIDTH) {
                 if(ball.y + ball.radius >= aiY && ball.y - ball.radius <= aiY + PADDLE_HEIGHT) {
                     let hitPos = (ball.y - aiY) / PADDLE_HEIGHT;
@@ -356,7 +334,7 @@
                 } else if(ball.x + ball.radius >= CW) {
                     playerScore++;
                     updateScoreUI();
-                    if(playerScore >= WIN_SCORE) endGame('свин побежден');
+                    if(playerScore >= WIN_SCORE) endGame('свин лох');
                     else resetBall('player');
                 }
             }
@@ -380,7 +358,6 @@
             winnerMsg = msg;
             freezeFrame = true;
             if(restartTimer) clearTimeout(restartTimer);
-            // автоматический рестарт через 2.5 секунды (опционально)
             restartTimer = setTimeout(() => {
                 fullReset();
             }, 2600);
@@ -401,50 +378,39 @@
             ball.vy = (Math.random() * 5 - 2.5);
             if(Math.abs(ball.vy) < 1) ball.vy = ball.vy > 0 ? 1.8 : -1.8;
             if(restartTimer) clearTimeout(restartTimer);
-            // сброс музыку не трогаем
         }
         
-        // кнопка ручного сброса
         document.getElementById('resetGameBtn').addEventListener('click', () => {
             if(restartTimer) clearTimeout(restartTimer);
             fullReset();
         });
         
-        // цикл анимации
-        let lastTimestamp = 0;
         function gameLoop() {
-            if(!freezeFrame) {
-                if(gameActive) {
-                    updateAI();
-                    updateBall();
-                }
+            if(!freezeFrame && gameActive) {
+                updateAI();
+                updateBall();
             }
             draw();
             requestAnimationFrame(gameLoop);
         }
         
-        // предзагрузка и старт
-        window.addEventListener('load', () => {
-            // проверка наличия изображений
-            if(ballImg.src === 'assets/ball.png' && ballImg.naturalWidth === 0) {
-                console.log('ожидание загрузки мяча');
-            }
-            updateScoreUI();
-            gameLoop();
-            // первоначальный сброс позиций
-            fullReset();
-            // обработка ресайза для корректного сенсора
-            window.addEventListener('resize', () => {});
-        });
-        
-        // старт музыки после первой активности
         function enableMusicOnUserAction() {
             startMusic();
+            canvas.removeEventListener('click', enableMusicOnUserAction);
+            canvas.removeEventListener('touchstart', enableMusicOnUserAction);
             document.body.removeEventListener('click', enableMusicOnUserAction);
             document.body.removeEventListener('touchstart', enableMusicOnUserAction);
         }
+        canvas.addEventListener('click', enableMusicOnUserAction);
+        canvas.addEventListener('touchstart', enableMusicOnUserAction);
         document.body.addEventListener('click', enableMusicOnUserAction);
         document.body.addEventListener('touchstart', enableMusicOnUserAction);
+        
+        window.addEventListener('load', () => {
+            updateScoreUI();
+            fullReset();
+            gameLoop();
+        });
     })();
 </script>
 </body>
